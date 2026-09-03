@@ -29,7 +29,12 @@ export function eventToICS(ev: CalendarEvent): string {
 }
 
 function escapeICS(s: string): string {
-  return s.replace(/[,;\\]/g, "\\$&").replace(/\n/g, "\\n");
+  // Sanitiza quebra de linha para evitar injeção de linhas ICS (ex: título com "\r\nDTSTART:...")
+  return s
+    .replace(/\r\n/g, "\\n")
+    .replace(/\r/g, "\\n")
+    .replace(/[,;\\]/g, "\\$&")
+    .replace(/\n/g, "\\n");
 }
 
 export function downloadICS(ev: CalendarEvent): void {
@@ -38,7 +43,8 @@ export function downloadICS(ev: CalendarEvent): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `${ev.date}-${ev.title}.ics`;
+  const safeTitle = ev.title.replace(/[^a-z0-9-_ ]/gi, "_").slice(0, 60).trim() || "evento";
+  a.download = `${ev.date}-${safeTitle}.ics`;
   a.click();
   URL.revokeObjectURL(url);
 }

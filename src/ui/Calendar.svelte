@@ -60,7 +60,7 @@
     e.preventDefault();
     target.classList.remove("drag-over");
     const toDate = target.getAttribute("data-date");
-    if (!toDate) return;
+    if (!toDate || !/^\d{4}-\d{2}-\d{2}$/.test(toDate)) return;
     let payload: { id: string; fromDate: string } | null = null;
     try {
       payload = JSON.parse(e.dataTransfer?.getData("text/plain") || "");
@@ -69,6 +69,8 @@
       try { payload = JSON.parse(e.dataTransfer?.getData("text/calendar-event") || ""); } catch { /* ignore */ }
     }
     if (!payload?.id || !payload?.fromDate) return;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(payload.fromDate)) return;
+    if (typeof payload.id !== "string" || payload.id.length > 100) return;
     if (payload.fromDate === toDate) return;
     eventsStore.moveEvent(payload.id, payload.fromDate, toDate);
     selectedDate.set(toDate);

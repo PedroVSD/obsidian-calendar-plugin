@@ -3,6 +3,7 @@ import { eventsStore } from "./store";
 import { settings } from "src/ui/stores";
 import { getEventDateTime } from "./utils";
 import { showCalendarToast } from "src/ui/toast";
+import { sendEmailReminder } from "src/integrations/email";
 
 const CHECK_INTERVAL_MS = 60 * 1000; // 1 min
 const notified = new Map<string, number>(); // id -> timestamp do disparo
@@ -59,6 +60,14 @@ function checkOnce() {
         },
       });
       notified.set(key, Date.now());
+
+      // Email opcional (fire-and-forget)
+      if (ev.emailReminder && $settings.emailEnabled && $settings.emailWebhookUrl) {
+        void sendEmailReminder(ev, {
+          enabled: true,
+          serviceUrl: $settings.emailWebhookUrl,
+        });
+      }
     }
   }
 }

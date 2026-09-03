@@ -6,6 +6,7 @@
   import { sortEvents, getTimeUntil, formatTimeUntil } from "src/events/utils";
   import { openEventModal } from "./eventModal";
   import { selectedDate } from "./stores";
+  import { downloadICS } from "src/integrations/google";
 
   export let dateStr: string; // YYYY-MM-DD
 
@@ -37,6 +38,14 @@
     }
   }
 
+  function handleExport(ev: CalendarEvent) {
+    downloadICS(ev);
+  }
+
+  function handleExportAll() {
+    for (const ev of sorted) downloadICS(ev);
+  }
+
   function selectDateRelative(offset: number) {
     const d = window.moment(dateStr, "YYYY-MM-DD").add(offset, "days");
     selectedDate.set(d.format("YYYY-MM-DD"));
@@ -56,6 +65,9 @@
         <option value="timeUntil">Tempo até</option>
         <option value="name">Nome A-Z</option>
       </select>
+      {#if sorted.length}
+        <button title="Exportar dia em .ics" on:click={handleExportAll}>⤓ ICS</button>
+      {/if}
       <button class="mod-cta" on:click={handleAdd}>+ Novo</button>
     </div>
   </div>
@@ -92,6 +104,7 @@
             </div>
           </div>
           <div class="event-actions">
+            <button class="clickable-icon" title="Exportar .ics" on:click={() => handleExport(ev)}>⤓</button>
             <button class="clickable-icon" title="Editar" on:click={() => handleEdit(ev)}>✎</button>
             <button class="clickable-icon" title="Remover" on:click={() => handleDelete(ev)}>🗑</button>
           </div>

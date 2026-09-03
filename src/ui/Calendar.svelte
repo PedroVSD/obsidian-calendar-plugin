@@ -31,6 +31,10 @@
   // Agenda: selectedDate segue hoje por padrão
   $: selectedDateStr = $selectedDate ?? today.format("YYYY-MM-DD");
 
+  // força re-render do calendário quando muda o dia selecionado (borda)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  $: void $selectedDate;
+
   function handleClickDay(date: Moment, isMetaPressed: boolean) {
     const str = date.format("YYYY-MM-DD");
     selectedDate.set(str);

@@ -33,6 +33,17 @@
   font-weight: 600;
 }
 
+/* Dia selecionado (agenda) - borda visível seguindo tema */
+#calendar-container .day.agenda-selected {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: -2px;
+  border-radius: 6px;
+}
+#calendar-container .day.agenda-selected.active {
+  outline: 2px solid var(--text-on-accent);
+  box-shadow: inset 0 0 0 1px var(--interactive-accent);
+}
+
 /* Modal de evento */
 .calendar-event-modal-container .modal {
   background: var(--background-primary);

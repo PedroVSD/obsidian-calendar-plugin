@@ -17,12 +17,29 @@ The plugin reads your Daily Note settings to know your date format, your daily n
 - Visualize your writing. Each day includes a meter to approximate how much you've written that day.
 - Use **Weekly notes** for an added organization layer! They work just like daily notes, but have their own customization options.
 
+### Agenda / Events (novo)
+
+- Adicione eventos em **qualquer dia** (clique seleciona, `+ Novo` ou menu de contexto).
+- Campos: título, descrição, horário, fuso horário, cor, local, pessoas, lembrete antes, repetição.
+- Lista abaixo do calendário do dia selecionado, ordenável por **nome** ou **tempo até o evento**, com countdown e borda no dia selecionado (`agenda-selected`).
+- Clique simples apenas seleciona o dia; **Ctrl/Cmd+clique** cria/abre a daily note (configurável em `Settings > Exigir Ctrl para criar nota`).
+- Dots coloridos no calendário por evento, tema segue o tema do Obsidian (`var(--background-primary)` etc.).
+- Toast elegante + notificações com snooze; e-mail via webhook e exportação `.ics` (Google Agenda offline).
+
 ## Settings
 
 - **Start week on [default: locale]**: Configure the Calendar view to show Sunday or Monday as the first day of the week. Choosing 'locale' will set the start day to be whatever is the default for your chosen locale (`Settings > About > Language`)
 - **Words per Dot [default: 250]**: Starting in version 1.3, dots reflect the word count of your files. By default, each dot represents 250 words, you can change that value to whatever you want. Set this to `0` to disable the word count entirely. **Note:** There is a max of 5 dots so that the view doesn't get too big!
 - **Confirm before creating new note [default: on]**: If you don't like that a modal prompts you before creating a new daily note, you can turn it off.
+- **Exigir Ctrl para criar nota [default: on]**: Quando ativo, clique simples apenas seleciona o dia para a agenda; segure `Ctrl/Cmd` para criar/abrir a daily/weekly note. Desative para comportamento antigo.
 - **Show Week Number [default: off]**: Enable this to add a new column to the calendar view showing the [Week Number](https://en.wikipedia.org/wiki/Week#Week_numbering). Clicking on these cells will open your **weekly note**.
+
+#### Agenda
+- **Fuso horário padrão / Cor padrão / Lembrete padrão / Notificações toast**: defaults para novos eventos (`src/settings.ts:260`).
+- **Integrações**: `Google Sync` (client_id + calendarId, export `.ics` offline) e `Email webhook` (`src/integrations/email.ts:12` POST JSON).
+
+#### Build & Test
+- `npm install && npm run build` gera `main.js` (`rollup.config.js:9`); `npm test` jest (`src/events/__tests__/utils.test.ts:1` 8 testes).
 
 ## Customization
 

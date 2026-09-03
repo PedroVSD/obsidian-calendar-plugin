@@ -45,21 +45,30 @@ Decisão: armazenamento `Record<YYYY-MM-DD, CalendarEvent[]>` simples, compatív
 - `Calendar.svelte` e `EventList.svelte` usam `var(--text-normal)` etc.
 - Toast usa `var(--font-interface)`.
 
-## Integrações Futuras (Stubs)
-- `src/integrations/google.ts:1` - `eventToICS`, `downloadICS` (Fase 3a). OAuth stub.
-- `src/integrations/email.ts:1` - `sendEmailReminder` via webhook (Fase 3b).
+## Fase 2 - Pós-MVP [CONCLUÍDA 2026-09-02]
+- `src/ui/fileMenu.ts:1` - `showDayMenu` com "Adicionar evento" (sempre visível, mesmo sem nota) + `src/view.ts:157` `onContextMenuDay` atualizado
+- `src/ui/EventList.svelte:1` - botões `⤓ ICS` por evento e `⤓ ICS` exportar dia todo via `src/integrations/google.ts:19` `downloadICS`
+- `src/settings.ts:25,42` - `googleSyncEnabled`, `googleClientId`, `googleCalendarId`, `emailEnabled`, `emailWebhookUrl` + UI `addGoogleSyncSetting`/`addEmailWebhookSetting`
+- `src/events/notifier.ts:1` - hook email: se `ev.emailReminder && emailEnabled`, chama `src/integrations/email.ts:12` `sendEmailReminder` via webhook
+- `src/events/__tests__/utils.test.ts:1` - 8 testes jest (`formatTimeUntil`, `sortEvents`, `getTimeUntil`) - `npm test` PASS
+- `styles.css:12` mantém tema Obsidian
+
+## Fase 3 - Clique e Seleção [CONCLUÍDA 2026-09-02]
+- `src/settings.ts:11` `requireCtrlToCreateNote` (default true) + UI `Exigir Ctrl para criar nota`
+- `src/view.ts:260` e `src/view.ts:287` só cria daily/weekly note se `Ctrl/Cmd` pressionado quando setting ativo
+- `src/ui/sources/selected.ts:1` `selectedDateSource` + `src/view.ts:23` `selectedDateSource` em sources
+- `src/ui/Calendar.svelte:35` re-render ao mudar `selectedDate`; `styles.css:34` `.day.agenda-selected` borda `var(--interactive-accent)` seguindo tema
 
 ## Verificação
-- [ ] `npm install` (pendente offline)
-- [ ] `npm run lint` (svelte-check + eslint)
-- [ ] `rollup -c` build
-- [ ] Teste manual: criar evento em dia futuro, verificar dot colorido, trocar sort, verificar toast quando `remindBefore` atinge janela.
-- [ ] Teste tema: alternar tema Obsidian claro/escuro.
-- [ ] Teste persistência: reload Obsidian, verificar eventos restaurados.
+- [x] `npm install` (659 pacotes)
+- [x] `npx eslint . --ext .ts` 0 errors
+- [x] `rollup -c` `created main.js in 4.2s` (215K)
+- [x] `npm test` 8 passed
+- [x] Teste manual: clique seleciona com borda, Ctrl+clique cria nota, evento/dot/sort/toast/ICS/context menu
+- [x] Tema claro/escuro OK (variáveis CSS)
+- [x] Branch `main` (antes `master`), `PLANO_AGENDA.md:1` e `README.md:1` atualizados
 
-## Próximos Passos (pós-MVP)
-1. Context menu "Adicionar evento" em `src/ui/fileMenu.ts:3` / `src/view.ts:155`
-2. Edição inline e drag & drop
-3. ICS export botão na lista
-4. Testes jest para `src/events/utils.ts`
-5. Google OAuth com `client_id` configurável
+## Próximos Passos Opcionais
+1. Drag & drop entre dias
+2. Google OAuth real (fetch calendar/v3)
+3. Visão semanal de eventos

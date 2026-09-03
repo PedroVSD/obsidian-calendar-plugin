@@ -15,11 +15,13 @@ import { tryToCreateWeeklyNote } from "src/io/weeklyNotes";
 import type { ISettings } from "src/settings";
 
 import Calendar from "./ui/Calendar.svelte";
-import { showFileMenu } from "./ui/fileMenu";
+import { showDayMenu } from "./ui/fileMenu";
 import { activeFile, dailyNotes, weeklyNotes, settings } from "./ui/stores";
+import { setSelectedDate } from "./ui/stores";
 import {
   customTagsSource,
   eventsSource,
+  selectedDateSource,
   streakSource,
   tasksSource,
   wordCountSource,
@@ -98,6 +100,7 @@ export default class CalendarView extends ItemView {
       wordCountSource,
       tasksSource,
       eventsSource,
+      selectedDateSource,
     ];
     this.app.workspace.trigger(TRIGGER_ON_OPEN, sources);
 
@@ -156,14 +159,13 @@ export default class CalendarView extends ItemView {
 
   private onContextMenuDay(date: Moment, event: MouseEvent): void {
     const note = getDailyNote(date, get(dailyNotes));
-    if (!note) {
-      // If no file exists for a given day, show nothing.
-      return;
-    }
-    showFileMenu(this.app, note, {
+    // Sempre mostra menu, mesmo sem nota, para permitir criar evento
+    setSelectedDate(date.format("YYYY-MM-DD"));
+    showDayMenu(this.app, date, note, {
       x: event.pageX,
       y: event.pageY,
     });
+    if (this.calendar) this.calendar.tick();
   }
 
   private onContextMenuWeek(date: Moment, event: MouseEvent): void {
@@ -268,7 +270,10 @@ export default class CalendarView extends ItemView {
     const existingFile = getWeeklyNote(date, get(weeklyNotes));
 
     if (!existingFile) {
-      // File doesn't exist
+      // Se exigir Ctrl e usuário clicou sem modificador, não cria - apenas seleciona
+      if (this.settings?.requireCtrlToCreateNote && !inNewSplit) {
+        return;
+      }
       tryToCreateWeeklyNote(startOfWeek, inNewSplit, this.settings, (file) => {
         activeFile.setFile(file);
       });
@@ -291,7 +296,10 @@ export default class CalendarView extends ItemView {
     const { workspace } = this.app;
     const existingFile = getDailyNote(date, get(dailyNotes));
     if (!existingFile) {
-      // File doesn't exist
+      // Se exigir Ctrl e usuário clicou sem modificador, não cria - apenas seleciona
+      if (this.settings?.requireCtrlToCreateNote && !inNewSplit) {
+        return;
+      }
       tryToCreateDailyNote(
         date,
         inNewSplit,

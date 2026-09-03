@@ -12,6 +12,7 @@ export interface ISettings {
   wordsPerDot: number;
   weekStart: IWeekStartOption;
   shouldConfirmBeforeCreate: boolean;
+  requireCtrlToCreateNote: boolean;
 
   // Weekly Note settings
   showWeeklyNote: boolean;
@@ -27,6 +28,12 @@ export interface ISettings {
   defaultTimezone: string;
   defaultRemindBefore: number;
   enableEventNotifications: boolean;
+  // Integrações
+  googleSyncEnabled: boolean;
+  googleClientId: string;
+  googleCalendarId: string;
+  emailEnabled: boolean;
+  emailWebhookUrl: string;
 }
 
 const weekdays = [
@@ -41,6 +48,7 @@ const weekdays = [
 
 export const defaultSettings: ISettings = Object.freeze({
   shouldConfirmBeforeCreate: true,
+  requireCtrlToCreateNote: true,
   weekStart: "locale" as IWeekStartOption,
 
   wordsPerDot: DEFAULT_WORDS_PER_DOT,
@@ -57,6 +65,11 @@ export const defaultSettings: ISettings = Object.freeze({
   defaultTimezone: getSystemTimezone(),
   defaultRemindBefore: 15,
   enableEventNotifications: true,
+  googleSyncEnabled: false,
+  googleClientId: "",
+  googleCalendarId: "primary",
+  emailEnabled: false,
+  emailWebhookUrl: "",
 }) as ISettings;
 
 export function appHasPeriodicNotesPluginLoaded(): boolean {
@@ -95,6 +108,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
     this.addDotThresholdSetting();
     this.addWeekStartSetting();
     this.addConfirmCreateSetting();
+    this.addRequireCtrlToCreateSetting();
     this.addShowWeeklyNoteSetting();
 
     if (
@@ -121,6 +135,16 @@ export class CalendarSettingsTab extends PluginSettingTab {
     this.addDefaultColorSetting();
     this.addDefaultRemindSetting();
     this.addEnableNotificationsSetting();
+
+    this.containerEl.createEl("h3", {
+      text: "Integrações (opcional)",
+    });
+    this.containerEl.createEl("p", {
+      cls: "setting-item-description",
+      text: "Google Agenda requer OAuth client_id. Email requer webhook (n8n/EmailJS). Export .ics funciona offline.",
+    });
+    this.addGoogleSyncSetting();
+    this.addEmailWebhookSetting();
 
     this.containerEl.createEl("h3", {
       text: "Advanced Settings",
@@ -179,6 +203,20 @@ export class CalendarSettingsTab extends PluginSettingTab {
         toggle.onChange(async (value) => {
           this.plugin.writeOptions(() => ({
             shouldConfirmBeforeCreate: value,
+          }));
+        });
+      });
+  }
+
+  addRequireCtrlToCreateSetting(): void {
+    new Setting(this.containerEl)
+      .setName("Exigir Ctrl para criar nota")
+      .setDesc("Se ativo, clicar numa data sem Ctrl apenas seleciona o dia (para eventos). Segure Ctrl/Cmd para criar/abrir a daily note. Desative para voltar ao comportamento antigo.")
+      .addToggle((toggle) => {
+        toggle.setValue(this.plugin.options.requireCtrlToCreateNote);
+        toggle.onChange(async (value) => {
+          this.plugin.writeOptions(() => ({
+            requireCtrlToCreateNote: value,
           }));
         });
       });
@@ -291,6 +329,59 @@ export class CalendarSettingsTab extends PluginSettingTab {
         t.setValue(this.plugin.options.enableEventNotifications);
         t.onChange(async (v) => this.plugin.writeOptions(() => ({ enableEventNotifications: v })));
       });
+  }
+
+  addGoogleSyncSetting(): void {
+    new Setting(this.containerEl)
+      .setName("Google Agenda - ativar")
+      .setDesc("Quando ativo, tenta sync via OAuth (requer client_id). MVP exporta .ics.")
+      .addToggle((t) => {
+        t.setValue(this.plugin.options.googleSyncEnabled);
+        t.onChange(async (v) => {
+          this.plugin.writeOptions(() => ({ googleSyncEnabled: v }));
+          this.display();
+        });
+      });
+    if (this.plugin.options.googleSyncEnabled) {
+      new Setting(this.containerEl)
+        .setName("Google Client ID")
+        .setDesc("Crie em console.cloud.google.com (OAuth 2.0 Client ID)")
+        .addText((tf) => {
+          tf.setPlaceholder("123...apps.googleusercontent.com");
+          tf.setValue(this.plugin.options.googleClientId);
+          tf.onChange(async (v) => this.plugin.writeOptions(() => ({ googleClientId: v })));
+        });
+      new Setting(this.containerEl)
+        .setName("Calendar ID")
+        .setDesc("Normalmente 'primary'")
+        .addText((tf) => {
+          tf.setValue(this.plugin.options.googleCalendarId);
+          tf.onChange(async (v) => this.plugin.writeOptions(() => ({ googleCalendarId: v })));
+        });
+    }
+  }
+
+  addEmailWebhookSetting(): void {
+    new Setting(this.containerEl)
+      .setName("Email webhook - ativar")
+      .setDesc("Envia lembrete via POST para webhook (n8n, Make, EmailJS)")
+      .addToggle((t) => {
+        t.setValue(this.plugin.options.emailEnabled);
+        t.onChange(async (v) => {
+          this.plugin.writeOptions(() => ({ emailEnabled: v }));
+          this.display();
+        });
+      });
+    if (this.plugin.options.emailEnabled) {
+      new Setting(this.containerEl)
+        .setName("Webhook URL")
+        .setDesc("POST JSON {subject, text, event}")
+        .addText((tf) => {
+          tf.setPlaceholder("https://n8n.exemplo.com/webhook/...");
+          tf.setValue(this.plugin.options.emailWebhookUrl);
+          tf.onChange(async (v) => this.plugin.writeOptions(() => ({ emailWebhookUrl: v })));
+        });
+    }
   }
 
   addLocaleOverrideSetting(): void {

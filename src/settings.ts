@@ -32,6 +32,7 @@ export interface ISettings {
   googleSyncEnabled: boolean;
   googleClientId: string;
   googleCalendarId: string;
+  googleAccessToken: string;
   emailEnabled: boolean;
   emailWebhookUrl: string;
 }
@@ -68,6 +69,7 @@ export const defaultSettings: ISettings = Object.freeze({
   googleSyncEnabled: false,
   googleClientId: "",
   googleCalendarId: "primary",
+  googleAccessToken: "",
   emailEnabled: false,
   emailWebhookUrl: "",
 }) as ISettings;
@@ -334,7 +336,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
   addGoogleSyncSetting(): void {
     new Setting(this.containerEl)
       .setName("Google Agenda - ativar")
-      .setDesc("Quando ativo, tenta sync via OAuth (requer client_id). MVP exporta .ics.")
+      .setDesc("Quando ativo, sincroniza via Google Calendar API v3. Export .ics funciona offline.")
       .addToggle((t) => {
         t.setValue(this.plugin.options.googleSyncEnabled);
         t.onChange(async (v) => {
@@ -345,7 +347,7 @@ export class CalendarSettingsTab extends PluginSettingTab {
     if (this.plugin.options.googleSyncEnabled) {
       new Setting(this.containerEl)
         .setName("Google Client ID")
-        .setDesc("Crie em console.cloud.google.com (OAuth 2.0 Client ID)")
+        .setDesc("Crie em console.cloud.google.com > APIs & Services > Credenciais (OAuth 2.0 Client ID - Desktop app)")
         .addText((tf) => {
           tf.setPlaceholder("123...apps.googleusercontent.com");
           tf.setValue(this.plugin.options.googleClientId);
@@ -353,11 +355,50 @@ export class CalendarSettingsTab extends PluginSettingTab {
         });
       new Setting(this.containerEl)
         .setName("Calendar ID")
-        .setDesc("Normalmente 'primary'")
+        .setDesc("Normalmente 'primary' ou email do calendário compartilhado")
         .addText((tf) => {
           tf.setValue(this.plugin.options.googleCalendarId);
           tf.onChange(async (v) => this.plugin.writeOptions(() => ({ googleCalendarId: v })));
         });
+      new Setting(this.containerEl)
+        .setName("Google Access Token")
+        .setDesc("Cole o access_token OAuth2. Clique em Autorizar para obter via Google e cole o token aqui. Use https://developers.google.com/oauthplayground com scope calendar.events")
+        .addText((tf) => {
+          tf.setPlaceholder("ya29.a0Af...");
+          tf.setValue(this.plugin.options.googleAccessToken);
+          // obscure?
+          (tf.inputEl as HTMLInputElement).type = "password";
+          tf.onChange(async (v) => this.plugin.writeOptions(() => ({ googleAccessToken: v })));
+        })
+        .addButton((btn) => {
+          btn.setButtonText("Autorizar no Google");
+          btn.onClick(async () => {
+            if (!this.plugin.options.googleClientId) {
+              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+              // @ts-ignore
+              new (window as unknown as { Notice: new (msg:string)=>unknown }).Notice("Configure o Client ID primeiro");
+              return;
+            }
+            const { buildGoogleAuthUrl } = await import("src/integrations/google");
+            const url = buildGoogleAuthUrl(this.plugin.options.googleClientId);
+            window.open(url, "_blank");
+          });
+        })
+        .addButton((btn) => {
+          btn.setButtonText("Validar token");
+          btn.onClick(async () => {
+            const { validateGoogleToken } = await import("src/integrations/google");
+            const ok = await validateGoogleToken(this.plugin.options.googleAccessToken);
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            const NoticeClass = (window as unknown as { Notice: new (msg:string)=>unknown }).Notice;
+            new NoticeClass(ok ? "Token válido ✓" : "Token inválido ou expirado");
+          });
+        });
+      this.containerEl.createEl("p", {
+        cls: "setting-item-description",
+        text: "Fluxo recomendado: 1) Crie Client ID Desktop, 2) Clique Autorizar, 3) copie o code exibido, 4) troque por access_token via POST https://oauth2.googleapis.com/token ou use OAuth Playground para gerar token e cole acima. O plugin usa Bearer token para POST /calendar/v3/calendars/{id}/events.",
+      });
     }
   }
 

@@ -20,6 +20,7 @@ import { activeFile, dailyNotes, weeklyNotes, settings } from "./ui/stores";
 import { setSelectedDate } from "./ui/stores";
 import {
   customTagsSource,
+  dragDropSource,
   eventsSource,
   selectedDateSource,
   streakSource,
@@ -101,6 +102,7 @@ export default class CalendarView extends ItemView {
       tasksSource,
       eventsSource,
       selectedDateSource,
+      dragDropSource,
     ];
     this.app.workspace.trigger(TRIGGER_ON_OPEN, sources);
 

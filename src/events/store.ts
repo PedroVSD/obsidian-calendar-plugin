@@ -56,6 +56,24 @@ function createEventsStore() {
       });
     },
 
+    moveEvent: (id: string, fromDate: string, toDate: string) => {
+      if (fromDate === toDate) return;
+      store.update((rec) => {
+        const copy: EventsRecord = { ...rec };
+        const srcList = copy[fromDate] || [];
+        const idx = srcList.findIndex((e) => e.id === id);
+        if (idx === -1) return copy;
+        const [ev] = srcList.splice(idx, 1);
+        if (srcList.length === 0) delete copy[fromDate];
+        else copy[fromDate] = [...srcList];
+        const moved: CalendarEvent = { ...ev, date: toDate, updatedAt: Date.now() };
+        const dest = copy[toDate] ? [...copy[toDate]] : [];
+        dest.push(moved);
+        copy[toDate] = dest;
+        return copy;
+      });
+    },
+
     clearAll: () => store.set({}),
   };
 }

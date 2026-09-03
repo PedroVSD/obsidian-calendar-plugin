@@ -6,7 +6,9 @@
   import { sortEvents, getTimeUntil, formatTimeUntil } from "src/events/utils";
   import { openEventModal } from "./eventModal";
   import { selectedDate } from "./stores";
-  import { downloadICS } from "src/integrations/google";
+  import { downloadICS, syncEventToGoogle } from "src/integrations/google";
+  import { settings } from "./stores";
+  import { get } from "svelte/store";
 
   export let dateStr: string; // YYYY-MM-DD
 
@@ -46,9 +48,47 @@
     for (const ev of sorted) downloadICS(ev);
   }
 
+  async function handleSyncGoogle(ev: CalendarEvent) {
+    const $settings = get(settings);
+    if (!$settings.googleSyncEnabled || !$settings.googleAccessToken) {
+      // @ts-ignore
+      new (window as unknown as { Notice: new (msg:string)=>unknown }).Notice("Configure Google Sync nas Settings");
+      return;
+    }
+    // @ts-ignore
+    const NoticeClass = (window as unknown as { Notice: new (msg:string)=>unknown }).Notice;
+    new NoticeClass(`Sincronizando "${ev.title}"...`);
+    const res = await syncEventToGoogle(ev, $settings.googleAccessToken, $settings.googleCalendarId);
+    if (res.ok) {
+      if (res.googleEventId && res.googleEventId !== ev.googleEventId) {
+        eventsStore.updateEvent({ ...ev, googleEventId: res.googleEventId });
+      }
+      new NoticeClass(`✓ Sincronizado com Google: ${ev.title}`);
+    } else {
+      new NoticeClass(`Falha Google: ${res.error}`);
+    }
+  }
+
+  async function handleSyncAllGoogle() {
+    for (const ev of sorted) await handleSyncGoogle(ev);
+  }
+
   function selectDateRelative(offset: number) {
     const d = window.moment(dateStr, "YYYY-MM-DD").add(offset, "days");
     selectedDate.set(d.format("YYYY-MM-DD"));
+  }
+
+  function handleDragStart(e: DragEvent, ev: CalendarEvent) {
+    const payload = JSON.stringify({ id: ev.id, fromDate: ev.date });
+    e.dataTransfer?.setData("text/plain", payload);
+    e.dataTransfer?.setData("text/calendar-event", payload);
+    if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+    // highlight dragging
+    const target = e.currentTarget as HTMLElement;
+    target?.classList.add("is-dragging");
+  }
+  function handleDragEnd(e: DragEvent) {
+    (e.currentTarget as HTMLElement)?.classList.remove("is-dragging");
   }
 </script>
 
@@ -67,6 +107,9 @@
       </select>
       {#if sorted.length}
         <button title="Exportar dia em .ics" on:click={handleExportAll}>⤓ ICS</button>
+        {#if $settings.googleSyncEnabled}
+          <button title="Sincronizar dia com Google" on:click={handleSyncAllGoogle}>↗ Google</button>
+        {/if}
       {/if}
       <button class="mod-cta" on:click={handleAdd}>+ Novo</button>
     </div>
@@ -80,7 +123,7 @@
   {:else}
     <div class="calendar-events">
       {#each sorted as ev (ev.id)}
-        <div class="calendar-event-item" class:is-past={getTimeUntil(ev, now) < 0} style="border-left-color: {ev.color}">
+        <div class="calendar-event-item" class:is-past={getTimeUntil(ev, now) < 0} style="border-left-color: {ev.color}" draggable="true" on:dragstart={(e) => handleDragStart(e, ev)} on:dragend={handleDragEnd}>
           <div class="event-dot" style="background: {ev.color}"></div>
           <div class="event-main">
             <div class="event-title-row">
@@ -104,6 +147,9 @@
             </div>
           </div>
           <div class="event-actions">
+            {#if $settings.googleSyncEnabled}
+              <button class="clickable-icon" title="Sincronizar com Google" on:click={() => handleSyncGoogle(ev)}>↗</button>
+            {/if}
             <button class="clickable-icon" title="Exportar .ics" on:click={() => handleExport(ev)}>⤓</button>
             <button class="clickable-icon" title="Editar" on:click={() => handleEdit(ev)}>✎</button>
             <button class="clickable-icon" title="Remover" on:click={() => handleDelete(ev)}>🗑</button>
@@ -144,6 +190,9 @@
     padding:0.6em 0.7em;
   }
   .calendar-event-item.is-past { opacity:0.65; }
+  .calendar-event-item[draggable="true"] { cursor: grab; }
+  .calendar-event-item.is-dragging { opacity:0.5; }
+  .calendar-event-item:active[draggable="true"] { cursor: grabbing; }
   .event-dot { width:10px; height:10px; border-radius:50%; margin-top:0.5em; flex-shrink:0; }
   .event-main { flex:1; min-width:0; }
   .event-title-row { display:flex; justify-content:space-between; gap:0.5em; }

@@ -7,10 +7,12 @@ import { selectedDate } from "../stores";
 export const selectedDateSource: ICalendarSource = {
   getDailyMetadata: async (date: Moment): Promise<IDayMetadata> => {
     const sel = get(selectedDate);
-    // se null, considera hoje como selecionado para feedback inicial
-    const selStr = sel ?? window.moment().format("YYYY-MM-DD");
+    // apenas o dia explicitamente clicado recebe borda; hoje não recebe borda automaticamente
+    if (!sel) {
+      return { classes: [], dots: [] };
+    }
     const dateStr = date.format("YYYY-MM-DD");
-    if (selStr === dateStr) {
+    if (sel === dateStr) {
       return {
         classes: ["agenda-selected"],
         dots: [],

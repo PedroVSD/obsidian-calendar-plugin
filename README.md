@@ -20,11 +20,13 @@ The plugin reads your Daily Note settings to know your date format, your daily n
 ### Agenda / Events (novo)
 
 - Adicione eventos em **qualquer dia** (clique seleciona, `+ Novo` ou menu de contexto).
-- Campos: título, descrição, horário, fuso horário, cor, local, pessoas, lembrete antes, repetição.
-- Lista abaixo do calendário do dia selecionado, ordenável por **nome** ou **tempo até o evento**, com countdown e borda no dia selecionado (`agenda-selected`).
-- Clique simples apenas seleciona o dia; **Ctrl/Cmd+clique** cria/abre a daily note (configurável em `Settings > Exigir Ctrl para criar nota`).
-- Dots coloridos no calendário por evento, tema segue o tema do Obsidian (`var(--background-primary)` etc.).
-- Toast elegante + notificações com snooze; e-mail via webhook e exportação `.ics` (Google Agenda offline).
+- Campos: título, descrição, horário, fuso horário, cor, local, pessoas, lembrete antes, repetição (diária/semanal/mensal/anual com expansão).
+- Lista abaixo do calendário do dia selecionado, ordenável por **nome** ou **tempo até o evento**, com countdown e **borda apenas no dia clicado** (`agenda-selected`); hoje tem só cor `var(--color-text-today)` sem borda (`src/ui/sources/selected.ts:9`, `styles.css:36`).
+- Clique simples apenas seleciona o dia e mostra borda `var(--interactive-accent)`; **Ctrl/Cmd+clique** cria/abre a daily note (configurável em `Settings > Exigir Ctrl para criar nota`).
+- **Drag & drop**: arraste evento da lista para qualquer célula do calendário (`data-date` via `dragDropSource` em `src/ui/sources/dragDrop.ts:1`) para mover entre dias (`eventsStore.moveEvent` em `src/events/store.ts:49`).
+- Dots coloridos no calendário por evento (até 5, agrupados), tema segue o tema do Obsidian (`var(--background-primary)` etc.).
+- Toast elegante + notificações com snooze (`src/events/notifier.ts:22` a cada 60s, deduplicação); e-mail via webhook (`src/integrations/email.ts:12` POST JSON).
+- **Google Agenda real**: OAuth2 (`src/integrations/google.ts:32` `buildGoogleAuthUrl`, `syncEventToGoogle` via `POST https://www.googleapis.com/calendar/v3/calendars/{id}/events`), exportação `.ics` offline fallback, token configurável em Settings (`googleAccessToken` em `src/settings.ts:31`).
 
 ## Settings
 
@@ -35,11 +37,11 @@ The plugin reads your Daily Note settings to know your date format, your daily n
 - **Show Week Number [default: off]**: Enable this to add a new column to the calendar view showing the [Week Number](https://en.wikipedia.org/wiki/Week#Week_numbering). Clicking on these cells will open your **weekly note**.
 
 #### Agenda
-- **Fuso horário padrão / Cor padrão / Lembrete padrão / Notificações toast**: defaults para novos eventos (`src/settings.ts:260`).
-- **Integrações**: `Google Sync` (client_id + calendarId, export `.ics` offline) e `Email webhook` (`src/integrations/email.ts:12` POST JSON).
+- **Fuso horário padrão / Cor padrão / Lembrete padrão / Notificações toast**: defaults para novos eventos (`src/settings.ts:277`).
+- **Integrações**: `Google Sync` (`src/integrations/google.ts:32` `buildGoogleAuthUrl` + `syncEventToGoogle` API v3, `client_id` + `calendarId` + `googleAccessToken`, botão `Validar token` e `Autorizar no Google`) com fallback export `.ics` offline; `Email webhook` (`src/integrations/email.ts:12` POST JSON) e **Drag & drop**.
 
 #### Build & Test
-- `npm install && npm run build` gera `main.js` (`rollup.config.js:9`); `npm test` jest (`src/events/__tests__/utils.test.ts:1` 8 testes).
+- `npm install && npm run build` gera `main.js` (`rollup.config.js:9`); `npm test` jest (`src/events/__tests__/utils.test.ts:1` 8 testes); `npx eslint . --ext .ts` 0 erros.
 
 ## Customization
 

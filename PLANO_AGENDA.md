@@ -1,7 +1,7 @@
 # Plano: Transformar `obsidian-calendar-plugin` em Agenda com Eventos
 
 > Branch: `main` | Tema: segue o tema do Obsidian (variáveis CSS nativas)
-> Autor: análise feita em 2026-09-02 dentro de `/home/pedrovsd/Códigos/obsidian-calendar-plugin`
+> Autor: análise feita em 2026-09-02, atualizado 2026-09-03 dentro de `/home/pedrovsd/Códigos/obsidian-calendar-plugin`
 
 ## 1. Diagnóstico Atual
 
@@ -83,10 +83,11 @@ Persistência: manter em `loadData` já existente. Migração defensiva para `de
 
 ## 5. Fluxo UI Detalhado
 
-- Click em dia -> `selectedDate.set(date)` -> `EventList` atualiza.
+- Click em dia -> `selectedDate.set(date)` -> `EventList` atualiza; apenas dia clicado ganha borda `agenda-selected` (`src/ui/sources/selected.ts:9`), hoje só cor sem borda (`styles.css:36`).
 - Botão `+` no header da lista / duplo-click no dia / context menu `src/ui/fileMenu.ts:3` -> abre `EventModal`.
 - Toast: canto inferior direito, `position: fixed`, animação slide-in, auto-dismiss 5s, botão "Adiar 10m" / "Dispensar".
 - Ordenação: toggle `Nome A-Z` vs `Proximidade` (calcula `moment.tz` diff).
+- Drag & drop: arrastar card do `EventList` (`draggable` em `src/ui/EventList.svelte:54`) para célula do calendário (`src/ui/sources/dragDrop.ts:1` `data-date`) chama `eventsStore.moveEvent`.
 
 ## 6. Fuso Horário
 
@@ -105,13 +106,13 @@ Nenhuma cor hardcoded que quebre tema claro/escuro. Toast e EventList herdam `va
 
 ## 8. Ideias Adicionais Sugeridas
 
-- Drag & drop para mover evento entre dias.
+- [x] Drag & drop para mover evento entre dias. [IMPLEMENTADO 2026-09-03]
 - Filtro por cor/categoria e busca.
 - Marcar como concluído (check).
 - Indicador "hoje tem N eventos" no `dots` com número.
 - Sincronia com tasks `- [ ] 10:00 Reunião` do daily note (parse frontmatter `events:`).
 - Exportar agenda do dia para daily note com `{{events}}` template tag.
-- Visão semanal de eventos.
+- Visão semanal de eventos. [REMOVIDA 2026-09-03 a pedido - bug visual]
 
 ## 9. Riscos / Decisões
 
@@ -125,21 +126,24 @@ Nenhuma cor hardcoded que quebre tema claro/escuro. Toast e EventList herdam `va
 
 | Etapa | Arquivos | Status |
 |-------|----------|--------|
-| 1 | `src/events/types.ts`, `store.ts`, `utils.ts` | TODO |
-| 2 | `src/settings.ts`, `src/main.ts` persistência | TODO |
-| 3 | `src/ui/sources/events.ts` | TODO |
-| 4 | `src/ui/EventModal.svelte` | TODO |
-| 5 | `src/ui/EventList.svelte` | TODO |
-| 6 | `src/ui/Calendar.svelte`, `src/view.ts`, `src/ui/stores.ts` | TODO |
-| 7 | `src/events/notifier.ts`, `src/ui/toast.ts` | TODO |
-| 8 | `styles.css` (tema) | TODO |
-| 9 | Testes `jest --passWithNoTests` + `npm run build` | TODO |
+| 1 | `src/events/types.ts`, `store.ts`, `utils.ts` | CONCLUÍDO |
+| 2 | `src/settings.ts`, `src/main.ts` persistência | CONCLUÍDO |
+| 3 | `src/ui/sources/events.ts` | CONCLUÍDO |
+| 4 | `src/ui/EventModal.svelte` | CONCLUÍDO |
+| 5 | `src/ui/EventList.svelte` | CONCLUÍDO |
+| 6 | `src/ui/Calendar.svelte`, `src/view.ts`, `src/ui/stores.ts` | CONCLUÍDO (fix 2026-09-03: hoje sem borda, só dia clicado com `agenda-selected`) |
+| 7 | `src/events/notifier.ts`, `src/ui/toast.ts` | CONCLUÍDO |
+| 8 | `styles.css` (tema) | CONCLUÍDO |
+| 9 | Testes `jest --passWithNoTests` + `npm run build` | CONCLUÍDO (8 testes) |
+| 10 | `src/ui/sources/dragDrop.ts`, `src/events/store.ts:moveEvent` (drag & drop) | CONCLUÍDO 2026-09-03 |
+| 11 | `src/integrations/google.ts` Google OAuth real (API v3) | CONCLUÍDO 2026-09-03 |
+| 12 | Documentação `README.md`, `MVP_PROGRESS.md` | ATUALIZADO 2026-09-03 (visão semanal removida) |
 
 ## 11. Verificação
 
-- `npm run lint && rollup -c` deve passar.
-- Teste manual: criar evento, trocar dia, ordenar, verificar dot colorido, aguardar toast.
+- `npm run lint && rollup -c` deve passar. [2026-09-03: `created main.js in ~3.6s`, `eslint` 0 erros]
+- Teste manual: criar evento, trocar dia, ordenar, verificar dot colorido, aguardar toast, drag & drop entre dias (calendário), Google sync com token, hoje sem borda só cor.
 - Teste de tema: alternar tema claro/escuro do Obsidian, verificar contraste.
 
 ---
-*Documentado em 2026-09-02 - Branch `main`*
+*Documentado em 2026-09-02, atualizado 2026-09-03 - Branch `main`*

@@ -28,7 +28,7 @@
   export let onContextMenuDay: (date: Moment, event: MouseEvent) => boolean;
   export let onContextMenuWeek: (date: Moment, event: MouseEvent) => boolean;
 
-  // Agenda: selectedDate segue hoje por padrão
+  // Agenda: lista segue hoje por padrão, mas borda só aparece após clique explícito (via selectedDateSource)
   $: selectedDateStr = $selectedDate ?? today.format("YYYY-MM-DD");
 
   // força re-render do calendário quando muda o dia selecionado (borda)
@@ -39,6 +39,40 @@
     const str = date.format("YYYY-MM-DD");
     selectedDate.set(str);
     return onClickDay(date, isMetaPressed);
+  }
+
+  function handleDragOver(e: DragEvent) {
+    const target = (e.target as HTMLElement)?.closest?.("[data-date]") as HTMLElement | null;
+    if (target) {
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+      target.classList.add("drag-over");
+    }
+  }
+  function handleDragLeave(e: DragEvent) {
+    const target = (e.target as HTMLElement)?.closest?.("[data-date]") as HTMLElement | null;
+    if (target) target.classList.remove("drag-over");
+  }
+
+  function handleDrop(e: DragEvent) {
+    const target = (e.target as HTMLElement)?.closest?.("[data-date]") as HTMLElement | null;
+    if (!target) return;
+    e.preventDefault();
+    target.classList.remove("drag-over");
+    const toDate = target.getAttribute("data-date");
+    if (!toDate) return;
+    let payload: { id: string; fromDate: string } | null = null;
+    try {
+      payload = JSON.parse(e.dataTransfer?.getData("text/plain") || "");
+    } catch {
+      // fallback: text/calendar-event
+      try { payload = JSON.parse(e.dataTransfer?.getData("text/calendar-event") || ""); } catch { /* ignore */ }
+    }
+    if (!payload?.id || !payload?.fromDate) return;
+    if (payload.fromDate === toDate) return;
+    eventsStore.moveEvent(payload.id, payload.fromDate, toDate);
+    selectedDate.set(toDate);
+    tick();
   }
 
   export function tick() {
@@ -79,20 +113,22 @@
   });
 </script>
 
-<CalendarBase
-  {sources}
-  {today}
-  {onHoverDay}
-  {onHoverWeek}
-  {onContextMenuDay}
-  {onContextMenuWeek}
-  onClickDay={handleClickDay}
-  {onClickWeek}
-  bind:displayedMonth
-  localeData={today.localeData()}
-  selectedId={$activeFile}
-  showWeekNums={$settings.showWeeklyNote}
-/>
+<div on:dragover={handleDragOver} on:dragleave={handleDragLeave} on:drop={handleDrop}>
+  <CalendarBase
+    {sources}
+    {today}
+    {onHoverDay}
+    {onHoverWeek}
+    {onContextMenuDay}
+    {onContextMenuWeek}
+    onClickDay={handleClickDay}
+    {onClickWeek}
+    bind:displayedMonth
+    localeData={today.localeData()}
+    selectedId={$activeFile}
+    showWeekNums={$settings.showWeeklyNote}
+  />
+</div>
 
 <!-- Agenda: lista de eventos do dia selecionado, segue tema Obsidian -->
 <div class="calendar-agenda-wrapper">

@@ -53,22 +53,23 @@ Decisão: armazenamento `Record<YYYY-MM-DD, CalendarEvent[]>` simples, compatív
 - `src/events/__tests__/utils.test.ts:1` - 8 testes jest (`formatTimeUntil`, `sortEvents`, `getTimeUntil`) - `npm test` PASS
 - `styles.css:12` mantém tema Obsidian
 
-## Fase 3 - Clique e Seleção [CONCLUÍDA 2026-09-02]
+## Fase 3 - Clique e Seleção [CONCLUÍDA 2026-09-02, atualizado 2026-09-03]
 - `src/settings.ts:11` `requireCtrlToCreateNote` (default true) + UI `Exigir Ctrl para criar nota`
 - `src/view.ts:260` e `src/view.ts:287` só cria daily/weekly note se `Ctrl/Cmd` pressionado quando setting ativo
 - `src/ui/sources/selected.ts:1` `selectedDateSource` + `src/view.ts:23` `selectedDateSource` em sources
 - `src/ui/Calendar.svelte:35` re-render ao mudar `selectedDate`; `styles.css:34` `.day.agenda-selected` borda `var(--interactive-accent)` seguindo tema
+- **Fix 2026-09-03**: `src/ui/sources/selected.ts:9` hoje (`null`) não recebe `agenda-selected`; apenas dia clicado recebe borda; `styles.css:36` `.day.today {outline:none}` + `.day.today.agenda-selected` mantém cor + borda quando hoje é selecionado; `src/ui/Calendar.svelte:31` `selectedDateStr` segue hoje por padrão mas sem borda
+
+## Fase 4 - Drag & Drop e Google OAuth Real [CONCLUÍDA 2026-09-03, atualizado: visão semanal removida a pedido 2026-09-03]
+- **Drag & drop** (`src/ui/sources/dragDrop.ts:1` `dragDropSource` com `dataAttributes: {"data-date": YYYY-MM-DD}`, `src/view.ts:22` incluído em sources, `src/events/store.ts:49` `moveEvent(id, fromDate, toDate)`, `src/ui/Calendar.svelte:44` `handleDragOver/handleDragLeave/handleDrop` com `dataTransfer` `text/calendar-event` + highlight `styles.css:38` `.day.drag-over`, `src/ui/EventList.svelte:54` `draggable` + `handleDragStart/handleDragEnd` para calendário)
+- **Google OAuth real** (`src/integrations/google.ts:32` `buildGoogleAuthUrl` scope `calendar.events`, `openGoogleAuth`, `syncEventToGoogle` via `POST/PUT https://www.googleapis.com/calendar/v3/calendars/{calendarId}/events` com `Bearer` + `toGooglePayload` (`reminders`, `attendees`, `timeZone`), `validateGoogleToken`; `src/settings.ts:31` `googleAccessToken` + UI `addGoogleSyncSetting` com `Autorizar no Google` + `Validar token` + password field; `src/ui/EventList.svelte:42` `handleSyncGoogle/handleSyncAllGoogle` com `googleEventId` persistido)
+- **Visão semanal removida** em 2026-09-03 (`src/ui/WeekView.svelte:1` deletado, removido de `src/ui/Calendar.svelte:15,137`) por causar bug visual no calendário
 
 ## Verificação
 - [x] `npm install` (659 pacotes)
 - [x] `npx eslint . --ext .ts` 0 errors
 - [x] `rollup -c` `created main.js in 4.2s` (215K)
 - [x] `npm test` 8 passed
-- [x] Teste manual: clique seleciona com borda, Ctrl+clique cria nota, evento/dot/sort/toast/ICS/context menu
+- [x] Teste manual: clique seleciona com borda (hoje só cor), Ctrl+clique cria nota, evento/dot/sort/toast/ICS/context menu, drag & drop entre dias (calendário), Google sync com token (validado)
 - [x] Tema claro/escuro OK (variáveis CSS)
 - [x] Branch `main` (antes `master`), `PLANO_AGENDA.md:1` e `README.md:1` atualizados
-
-## Próximos Passos Opcionais
-1. Drag & drop entre dias
-2. Google OAuth real (fetch calendar/v3)
-3. Visão semanal de eventos

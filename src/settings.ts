@@ -3,6 +3,8 @@ import { appHasDailyNotesPluginLoaded } from "obsidian-daily-notes-interface";
 import type { ILocaleOverride, IWeekStartOption } from "obsidian-calendar-ui";
 
 import { DEFAULT_WEEK_FORMAT, DEFAULT_WORDS_PER_DOT } from "src/constants";
+import type { EventsRecord } from "src/events/types";
+import { COMMON_TIMEZONES, DEFAULT_EVENT_COLOR, getSystemTimezone } from "src/events/types";
 
 import type CalendarPlugin from "./main";
 
@@ -18,6 +20,13 @@ export interface ISettings {
   weeklyNoteFolder: string;
 
   localeOverride: ILocaleOverride;
+
+  // Agenda / Events settings
+  events: EventsRecord;
+  defaultEventColor: string;
+  defaultTimezone: string;
+  defaultRemindBefore: number;
+  enableEventNotifications: boolean;
 }
 
 const weekdays = [
@@ -30,7 +39,7 @@ const weekdays = [
   "saturday",
 ];
 
-export const defaultSettings = Object.freeze({
+export const defaultSettings: ISettings = Object.freeze({
   shouldConfirmBeforeCreate: true,
   weekStart: "locale" as IWeekStartOption,
 
@@ -42,7 +51,13 @@ export const defaultSettings = Object.freeze({
   weeklyNoteFolder: "",
 
   localeOverride: "system-default",
-});
+
+  events: {},
+  defaultEventColor: DEFAULT_EVENT_COLOR,
+  defaultTimezone: getSystemTimezone(),
+  defaultRemindBefore: 15,
+  enableEventNotifications: true,
+}) as ISettings;
 
 export function appHasPeriodicNotesPluginLoaded(): boolean {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -98,6 +113,14 @@ export class CalendarSettingsTab extends PluginSettingTab {
       this.addWeeklyNoteTemplateSetting();
       this.addWeeklyNoteFolderSetting();
     }
+
+    this.containerEl.createEl("h3", {
+      text: "Agenda / Events",
+    });
+    this.addDefaultTimezoneSetting();
+    this.addDefaultColorSetting();
+    this.addDefaultRemindSetting();
+    this.addEnableNotificationsSetting();
 
     this.containerEl.createEl("h3", {
       text: "Advanced Settings",
@@ -210,6 +233,63 @@ export class CalendarSettingsTab extends PluginSettingTab {
         textfield.onChange(async (value) => {
           this.plugin.writeOptions(() => ({ weeklyNoteFolder: value }));
         });
+      });
+  }
+
+  addDefaultTimezoneSetting(): void {
+    new Setting(this.containerEl)
+      .setName("Fuso horário padrão")
+      .setDesc("Usado ao criar novos eventos")
+      .addDropdown((dropdown) => {
+        COMMON_TIMEZONES.forEach((tz) => {
+          dropdown.addOption(tz, tz === "system-default" ? `Sistema (${getSystemTimezone()})` : tz);
+        });
+        // permite valor custom
+        if (!COMMON_TIMEZONES.includes(this.plugin.options.defaultTimezone)) {
+          dropdown.addOption(this.plugin.options.defaultTimezone, this.plugin.options.defaultTimezone);
+        }
+        dropdown.setValue(this.plugin.options.defaultTimezone);
+        dropdown.onChange(async (value) => {
+          this.plugin.writeOptions(() => ({ defaultTimezone: value }));
+        });
+      });
+  }
+
+  addDefaultColorSetting(): void {
+    new Setting(this.containerEl)
+      .setName("Cor padrão do evento")
+      .setDesc("Cor usada nos dots e na lista")
+      .addColorPicker((cp) => {
+        cp.setValue(this.plugin.options.defaultEventColor);
+        cp.onChange(async (value) => {
+          this.plugin.writeOptions(() => ({ defaultEventColor: value }));
+        });
+      });
+  }
+
+  addDefaultRemindSetting(): void {
+    new Setting(this.containerEl)
+      .setName("Lembrete padrão")
+      .setDesc("Quanto tempo antes notificar")
+      .addDropdown((d) => {
+        d.addOption("0", "Na hora");
+        d.addOption("5", "5 min antes");
+        d.addOption("15", "15 min antes");
+        d.addOption("30", "30 min antes");
+        d.addOption("60", "1 hora antes");
+        d.addOption("1440", "1 dia antes");
+        d.setValue(String(this.plugin.options.defaultRemindBefore));
+        d.onChange(async (v) => this.plugin.writeOptions(() => ({ defaultRemindBefore: Number(v) })));
+      });
+  }
+
+  addEnableNotificationsSetting(): void {
+    new Setting(this.containerEl)
+      .setName("Ativar notificações toast")
+      .setDesc("Mostra toast elegante quando o evento está próximo")
+      .addToggle((t) => {
+        t.setValue(this.plugin.options.enableEventNotifications);
+        t.onChange(async (v) => this.plugin.writeOptions(() => ({ enableEventNotifications: v })));
       });
   }
 

@@ -19,6 +19,7 @@ import { showFileMenu } from "./ui/fileMenu";
 import { activeFile, dailyNotes, weeklyNotes, settings } from "./ui/stores";
 import {
   customTagsSource,
+  eventsSource,
   streakSource,
   tasksSource,
   wordCountSource,
@@ -96,6 +97,7 @@ export default class CalendarView extends ItemView {
       streakSource,
       wordCountSource,
       tasksSource,
+      eventsSource,
     ];
     this.app.workspace.trigger(TRIGGER_ON_OPEN, sources);
 

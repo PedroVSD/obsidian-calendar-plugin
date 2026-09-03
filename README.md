@@ -23,10 +23,10 @@ The plugin reads your Daily Note settings to know your date format, your daily n
 - Campos: título, descrição, horário, fuso horário, cor, local, pessoas, lembrete antes, repetição (diária/semanal/mensal/anual com expansão).
 - Lista abaixo do calendário do dia selecionado, ordenável por **nome** ou **tempo até o evento**, com countdown e **borda apenas no dia clicado** (`agenda-selected`); hoje tem só cor `var(--color-text-today)` sem borda (`src/ui/sources/selected.ts:9`, `styles.css:36`).
 - Clique simples apenas seleciona o dia e mostra borda `var(--interactive-accent)`; **Ctrl/Cmd+clique** cria/abre a daily note (configurável em `Settings > Exigir Ctrl para criar nota`).
-- **Drag & drop**: arraste evento da lista para qualquer célula do calendário (`data-date` via `dragDropSource` em `src/ui/sources/dragDrop.ts:1`) para mover entre dias (`eventsStore.moveEvent` em `src/events/store.ts:49`).
-- Dots coloridos no calendário por evento (até 5, agrupados), tema segue o tema do Obsidian (`var(--background-primary)` etc.).
-- Toast elegante + notificações com snooze (`src/events/notifier.ts:22` a cada 60s, deduplicação); e-mail via webhook (`src/integrations/email.ts:12` POST JSON).
-- **Google Agenda real**: OAuth2 (`src/integrations/google.ts:32` `buildGoogleAuthUrl`, `syncEventToGoogle` via `POST https://www.googleapis.com/calendar/v3/calendars/{id}/events`), exportação `.ics` offline fallback, token configurável em Settings (`googleAccessToken` em `src/settings.ts:31`).
+ - **Drag & drop**: arraste evento da lista para qualquer célula do calendário (`data-date` via `dragDropSource` em `src/ui/sources/dragDrop.ts:1`) para mover entre dias (`eventsStore.moveEvent` em `src/events/store.ts:49`).
+ - Dots coloridos no calendário por evento (até 5, agrupados; Google tem `google-dot` azul `#4285F4` em `styles.css:33`), tema segue o tema do Obsidian (`var(--background-primary)` etc.).
+ - Toast elegante + notificações com **adiar (snooze) 10 min** (`src/events/notifier.ts:22` a cada 60s, `src/events/snooze.ts:1` `SNOOZE_MS=600000`); evento adiado **não fica apagado** — `src/ui/EventList.svelte:1` usa `isSnoozed`/`isPast` com `is-snoozed` destacado e label `adiado Xmin`; e-mail via webhook (`src/integrations/email.ts:12` POST JSON).
+ - **Google Agenda real**: OAuth2 (`src/integrations/google.ts:32` `buildGoogleAuthUrl`, `syncEventToGoogle` via `POST https://www.googleapis.com/calendar/v3/calendars/{id}/events`), exportação `.ics` offline fallback, token configurável em Settings (`googleAccessToken` em `src/settings.ts:31`); eventos vindos do Google (`googleEventId`) têm **degradê Google** (`#4285F4→#DB4437→#F4B400→#0F9D58`) em `EventList` (`is-google`, `border-image` + `google-badge` G) e pontinho azul no calendário.
 
 ## Settings
 

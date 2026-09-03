@@ -9,6 +9,7 @@
   import { downloadICS, syncEventToGoogle } from "src/integrations/google";
   import { settings } from "./stores";
   import { get } from "svelte/store";
+  import { snoozed } from "src/events/snooze";
 
   export let dateStr: string; // YYYY-MM-DD
 
@@ -25,6 +26,23 @@
 
   $: allForDate = $eventsStore[dateStr] ? [...$eventsStore[dateStr]] : [];
   $: sorted = sortEvents(allForDate, sortBy, now);
+
+  function isSnoozed(id: string): boolean {
+    const until = $snoozed[id];
+    return !!until && until > now.getTime();
+  }
+  function isPast(ev: CalendarEvent): boolean {
+    if (isSnoozed(ev.id)) return false;
+    return getTimeUntil(ev, now) < 0;
+  }
+  function snoozedLabel(id: string): string {
+    const until = $snoozed[id];
+    if (!until) return "";
+    const ms = until - now.getTime();
+    if (ms <= 0) return "";
+    const mins = Math.ceil(ms / 60000);
+    return `adiado ${mins}min`;
+  }
 
   function handleAdd() {
     openEventModal(window.app, dateStr);
@@ -123,18 +141,18 @@
   {:else}
     <div class="calendar-events">
       {#each sorted as ev (ev.id)}
-        <div class="calendar-event-item" class:is-past={getTimeUntil(ev, now) < 0} style="border-left-color: {ev.color}" draggable="true" on:dragstart={(e) => handleDragStart(e, ev)} on:dragend={handleDragEnd}>
-          <div class="event-dot" style="background: {ev.color}"></div>
+        <div class="calendar-event-item" class:is-past={isPast(ev)} class:is-snoozed={isSnoozed(ev.id)} class:is-google={!!ev.googleEventId} style="border-left-color: {ev.googleEventId ? 'transparent' : ev.color}" draggable="true" on:dragstart={(e) => handleDragStart(e, ev)} on:dragend={handleDragEnd}>
+          <div class="event-dot" style="background: {ev.googleEventId ? 'linear-gradient(135deg, #4285F4 0%, #DB4437 33%, #F4B400 66%, #0F9D58 100%)' : ev.color}"></div>
           <div class="event-main">
             <div class="event-title-row">
-              <span class="event-title">{ev.title}</span>
+              <span class="event-title">{ev.title} {#if ev.googleEventId}<span class="google-badge" title="Sincronizado com Google Agenda">G</span>{/if}</span>
               <span class="event-time">{ev.time} <span class="event-tz">({ev.timezone})</span></span>
             </div>
             {#if ev.description}
               <div class="event-desc">{ev.description}</div>
             {/if}
             <div class="event-meta">
-              <span class="event-until" class:past={getTimeUntil(ev, now) < 0}>{formatTimeUntil(getTimeUntil(ev, now))}</span>
+              <span class="event-until" class:past={isPast(ev)}>{isSnoozed(ev.id) ? snoozedLabel(ev.id) : formatTimeUntil(getTimeUntil(ev, now))}</span>
               {#if ev.location}
                 <span class="event-location">📍 {ev.location}</span>
               {/if}
@@ -190,6 +208,10 @@
     padding:0.6em 0.7em;
   }
   .calendar-event-item.is-past { opacity:0.65; }
+  .calendar-event-item.is-snoozed { opacity:1 !important; border-color: var(--interactive-accent); box-shadow: 0 0 0 1px var(--interactive-accent); }
+  .calendar-event-item.is-google { border-left-color: transparent !important; border-image: linear-gradient(to bottom, #4285F4 0%, #DB4437 25%, #F4B400 50%, #0F9D58 75%, #4285F4 100%) 1; border-left-width:4px; border-left-style:solid; }
+  .calendar-event-item.is-google.is-past { opacity:0.8; }
+  .google-badge { display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; border-radius:50%; background: linear-gradient(135deg, #4285F4, #DB4437, #F4B400, #0F9D58); color:white; font-size:0.7em; font-weight:700; margin-left:4px; }
   .calendar-event-item[draggable="true"] { cursor: grab; }
   .calendar-event-item.is-dragging { opacity:0.5; }
   .calendar-event-item:active[draggable="true"] { cursor: grabbing; }

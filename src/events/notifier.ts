@@ -4,10 +4,10 @@ import { settings } from "src/ui/stores";
 import { getEventDateTime } from "./utils";
 import { showCalendarToast } from "src/ui/toast";
 import { sendEmailReminder } from "src/integrations/email";
+import { snoozeEvent, isSnoozed, SNOOZE_MS } from "./snooze";
 
 const CHECK_INTERVAL_MS = 60 * 1000; // 1 min
 const notified = new Map<string, number>(); // id -> timestamp do disparo
-const SNOOZE_MS = 10 * 60 * 1000;
 
 // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 function shouldNotify(eventId: string, fireAt: number): boolean {
@@ -28,6 +28,7 @@ function checkOnce() {
 
   for (const list of Object.values(record)) {
     for (const ev of list) {
+      if (isSnoozed(ev.id)) continue;
       const eventTime = getEventDateTime(ev).getTime();
       const remindAt = eventTime - ev.remindBeforeMinutes * 60 * 1000;
       // janela: se now está entre remindAt e eventTime+60s, ou se remindBefore=0 e now ~ eventTime
@@ -56,10 +57,15 @@ function checkOnce() {
         color: ev.color,
         durationMs: 10000,
         onSnooze: () => {
+          snoozeEvent(key, SNOOZE_MS);
+          // também bloqueia notificação imediata
           notified.set(key, Date.now() + SNOOZE_MS - CHECK_INTERVAL_MS);
         },
       });
-      notified.set(key, Date.now());
+      // se está adiado, não registra como notificado para permitir re-disparo pós-snooze
+      if (!isSnoozed(key)) {
+        notified.set(key, Date.now());
+      }
 
       // Email opcional (fire-and-forget)
       if (ev.emailReminder && $settings.emailEnabled && $settings.emailWebhookUrl) {

@@ -16,10 +16,9 @@ export const eventsSource: ICalendarSource = {
 
     // Cria um dot por evento até 5, agrupando extras
     const dots = events.slice(0, 5).map((ev) => ({
-      className: "event-dot",
-      color: ev.color || "default",
+      className: ev.googleEventId ? "event-dot google-dot" : "event-dot",
+      color: ev.googleEventId ? "#4285F4" : ev.color || "default",
       isFilled: true,
-      // obsidian-calendar-ui suporta `color` como css var ou hex via style
     }));
 
     // Se mais de 5, adiciona indicador

@@ -65,11 +65,15 @@ Decisão: armazenamento `Record<YYYY-MM-DD, CalendarEvent[]>` simples, compatív
 - **Google OAuth real** (`src/integrations/google.ts:32` `buildGoogleAuthUrl` scope `calendar.events`, `openGoogleAuth`, `syncEventToGoogle` via `POST/PUT https://www.googleapis.com/calendar/v3/calendars/{calendarId}/events` com `Bearer` + `toGooglePayload` (`reminders`, `attendees`, `timeZone`), `validateGoogleToken`; `src/settings.ts:31` `googleAccessToken` + UI `addGoogleSyncSetting` com `Autorizar no Google` + `Validar token` + password field; `src/ui/EventList.svelte:42` `handleSyncGoogle/handleSyncAllGoogle` com `googleEventId` persistido)
 - **Visão semanal removida** em 2026-09-03 (`src/ui/WeekView.svelte:1` deletado, removido de `src/ui/Calendar.svelte:15,137`) por causar bug visual no calendário
 
+## Fase 5 - Correção Snooze e Degradê Google [CONCLUÍDA 2026-09-03]
+- **Bug adiado**: `src/events/snooze.ts:1` novo store `snoozed` (`SNOOZE_MS=600000`, `snoozeEvent/isSnoozed/clearExpiredSnoozes`); `src/events/notifier.ts:10` usa `snoozeEvent` + `isSnoozed` para não re-notificar; `src/ui/EventList.svelte:1` importa `snoozed`, `isSnoozed/isPast/snoozedLabel` — evento adiado fica `is-snoozed` (opacidade 1, `box-shadow`) e `event-until` mostra `adiado Xmin` em vez de `há Xmin`, não mais `is-past` apagado.
+- **Google degradê**: `src/ui/sources/events.ts:19` dots de eventos com `googleEventId` usam `className google-dot` + `#4285F4`; `styles.css:33` `.dot.google-dot {fill:#4285F4 + drop-shadow}`; `src/ui/EventList.svelte:126` `is-google` com `border-image: linear-gradient(#4285F4→#DB4437→#F4B400→#0F9D58)` e `google-badge` G com mesmo degradê, `event-dot` com `linear-gradient(135deg,...)` para atividades puxadas/sincronizadas do Google.
+
 ## Verificação
 - [x] `npm install` (659 pacotes)
 - [x] `npx eslint . --ext .ts` 0 errors
-- [x] `rollup -c` `created main.js in 4.2s` (215K)
+- [x] `rollup -c` `created main.js in 4.1s`
 - [x] `npm test` 8 passed
-- [x] Teste manual: clique seleciona com borda (hoje só cor), Ctrl+clique cria nota, evento/dot/sort/toast/ICS/context menu, drag & drop entre dias (calendário), Google sync com token (validado)
+- [x] Teste manual: clique seleciona com borda (hoje só cor), Ctrl+clique cria nota, evento/dot/sort/toast/ICS/context menu, drag & drop entre dias (calendário), Google sync com token (validado), snooze não apaga evento (fica destacado), Google com degradê
 - [x] Tema claro/escuro OK (variáveis CSS)
 - [x] Branch `main` (antes `master`), `PLANO_AGENDA.md:1` e `README.md:1` atualizados
